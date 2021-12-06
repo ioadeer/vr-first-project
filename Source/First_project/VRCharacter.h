@@ -31,7 +31,12 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UCameraComponent* Camera;
 
+	class USceneComponent* VRRoot;
+
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
+
+	FVector PrevLocation;
+	FVector ActualLocation;
 
 };
