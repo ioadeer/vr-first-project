@@ -28,15 +28,25 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-	UPROPERTY(VisibleAnywhere)
-	class UCameraComponent* Camera;
 
+	void UpdateDestinationMarker();
+
+	UPROPERTY()
+	class UCameraComponent* Camera;
+	UPROPERTY()
 	class USceneComponent* VRRoot;
+
+	UPROPERTY(VisibleAnywhere)
+	class UStaticMeshComponent* DestinationMarker;
 
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
 
 	FVector PrevLocation;
 	FVector ActualLocation;
+
+private:
+	UPROPERTY(EditAnywhere)
+	float MaxTeleportDistance = 1000.f;
 
 };
