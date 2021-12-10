@@ -7,6 +7,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AVRCharacter::AVRCharacter()
@@ -22,6 +24,15 @@ AVRCharacter::AVRCharacter()
 
 	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
 	DestinationMarker->SetupAttachment(GetRootComponent());
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	CameraManager = PC->PlayerCameraManager;
+	//CameraManager = Cast<APlayerCameraManager>(UGameplayStatics::GetPlayerCameraManager(this,0));
+	if (!CameraManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Camera Manager at setup!"));
+	}
+	
 }
 
 // Called when the game starts or when spawned
@@ -30,7 +41,7 @@ void AVRCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	PrevLocation = Camera->GetRelativeLocation();
-	
+	DestinationMarker->SetVisibility(false);
 }
 
 // Called every frame
@@ -64,34 +75,38 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &AVRCharacter::MoveForward);
 	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &AVRCharacter::MoveRight);
-
+	PlayerInputComponent->BindAction(TEXT("Teleport"),EInputEvent::IE_Released,this, &AVRCharacter::BeginTeleport);
 }
 
 void AVRCharacter::UpdateDestinationMarker()
 {
-	FVector PlayerViewPointPosition;
+	/*FVector PlayerViewPointPosition;
 	FRotator PlayerViewPointRotation;
 
 	GetController()->GetPlayerViewPoint(
 		PlayerViewPointPosition,
 		PlayerViewPointRotation
-	);
+	);*/
 	// Otra es
-	/*FVector Start = Camera->GetComponentLocation();
-	FVector End = Start + Camera->GetForwardVector() * MaxTeleportDistance;*/
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + Camera->GetForwardVector() * MaxTeleportDistance;
 
-	FVector LineTracedEnd = PlayerViewPointPosition + PlayerViewPointRotation.Vector() * MaxTeleportDistance;
+	// FVector LineTracedEnd = PlayerViewPointPosition + PlayerViewPointRotation.Vector() * MaxTeleportDistance;
 	FHitResult HitResult;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	if (GetWorld()->LineTraceSingleByChannel(
 		HitResult,
-		PlayerViewPointPosition,
-		LineTracedEnd,
+		Start,
+		End,
 		ECollisionChannel::ECC_Visibility,
 		Params
 	)) {
+		DestinationMarker->SetVisibility(true);
 		DestinationMarker->SetWorldLocation(HitResult.Location);
+	}
+	else {
+		DestinationMarker->SetVisibility(false);
 	}
 }
 
@@ -104,4 +119,39 @@ void AVRCharacter::MoveRight(float AxisValue)
 {
 	AddMovementInput(Camera->GetRightVector() * AxisValue);
 }
+
+void AVRCharacter::BeginTeleport()
+{
+	
+
+	if (CameraManager)
+	{
+		CameraManager->StartCameraFade(0, 1, FadeOutTime, FColor(0));
+		FTimerHandle PlayerTeleportHandle;
+		FTimerDelegate PlayerTeleportDelegate = FTimerDelegate::CreateUObject(
+			this,
+			&AVRCharacter::Teleport
+		);
+		UWorld* MyWorld = GetWorld();
+		if (!MyWorld)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NULL POINTER TO WORLD"));
+			return;
+		}
+		GetWorld()->GetTimerManager().SetTimer(PlayerTeleportHandle, PlayerTeleportDelegate, FadeOutTime, false);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Camera Manager"));
+	}
+	
+}
+
+void AVRCharacter::Teleport()
+{
+	SetActorLocation(DestinationMarker->GetComponentLocation());
+	CameraManager->StartCameraFade(1, 0, FadeInTime, FColor(0));
+
+}
+
 

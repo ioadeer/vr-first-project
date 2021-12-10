@@ -35,12 +35,16 @@ private:
 	class UCameraComponent* Camera;
 	UPROPERTY()
 	class USceneComponent* VRRoot;
+	
+	class APlayerCameraManager* CameraManager;
 
 	UPROPERTY(VisibleAnywhere)
 	class UStaticMeshComponent* DestinationMarker;
 
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
+	void BeginTeleport();
+	void Teleport();
 
 	FVector PrevLocation;
 	FVector ActualLocation;
@@ -48,5 +52,10 @@ private:
 private:
 	UPROPERTY(EditAnywhere)
 	float MaxTeleportDistance = 1000.f;
+		
+	UPROPERTY(EditAnywhere)
+	float FadeOutTime = 0.25f;
 
+	UPROPERTY(EditAnywhere)
+	float FadeInTime = 0.25f;
 };
