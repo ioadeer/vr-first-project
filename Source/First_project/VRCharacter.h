@@ -29,6 +29,7 @@ public:
 
 private:
 
+	bool FindTeleportDestination(FVector &OutLocation);
 	void UpdateDestinationMarker();
 
 	UPROPERTY()
@@ -58,4 +59,7 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float FadeInTime = 0.25f;
+	
+	UPROPERTY(EditAnywhere)
+	FVector TeleportProjectionExtent = FVector(100.f, 100.f, 100.f);
 };

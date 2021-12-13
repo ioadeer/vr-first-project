@@ -9,6 +9,8 @@
 #include "DrawDebugHelpers.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/CapsuleComponent.h"
+#include "NavigationSystem.h"
 
 // Sets default values
 AVRCharacter::AVRCharacter()
@@ -25,9 +27,9 @@ AVRCharacter::AVRCharacter()
 	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
 	DestinationMarker->SetupAttachment(GetRootComponent());
 
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	CameraManager = PC->PlayerCameraManager;
-	//CameraManager = Cast<APlayerCameraManager>(UGameplayStatics::GetPlayerCameraManager(this,0));
+	// APlayerController* PC = Cast<APlayerController>(GetController());
+	// CameraManager = PC->PlayerCameraManager;
+	CameraManager = Cast<APlayerCameraManager>(UGameplayStatics::GetPlayerCameraManager(this,0));
 	if (!CameraManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Camera Manager at setup!"));
@@ -78,16 +80,8 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction(TEXT("Teleport"),EInputEvent::IE_Released,this, &AVRCharacter::BeginTeleport);
 }
 
-void AVRCharacter::UpdateDestinationMarker()
+bool AVRCharacter::FindTeleportDestination(FVector& OutLocation)
 {
-	/*FVector PlayerViewPointPosition;
-	FRotator PlayerViewPointRotation;
-
-	GetController()->GetPlayerViewPoint(
-		PlayerViewPointPosition,
-		PlayerViewPointRotation
-	);*/
-	// Otra es
 	FVector Start = Camera->GetComponentLocation();
 	FVector End = Start + Camera->GetForwardVector() * MaxTeleportDistance;
 
@@ -102,10 +96,45 @@ void AVRCharacter::UpdateDestinationMarker()
 		ECollisionChannel::ECC_Visibility,
 		Params
 	)) {
-		DestinationMarker->SetVisibility(true);
-		DestinationMarker->SetWorldLocation(HitResult.Location);
+		UWorld* MyWorld = GetWorld();
+		FNavLocation NavLocation;
+		if (MyWorld)
+		{
+			if (UNavigationSystemV1::GetCurrent(MyWorld)->ProjectPointToNavigation(
+				HitResult.Location,
+				NavLocation,
+				TeleportProjectionExtent
+			))
+			{
+				/*DestinationMarker->SetVisibility(true);
+				DestinationMarker->SetWorldLocation(NavLocation.Location);*/
+				OutLocation = NavLocation.Location;
+				return true;
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NULL POINTER TO WORLD"));
+			return false;
+		}
+		return false;
 	}
 	else {
+		return false;
+	}
+	// return false;
+}
+
+void AVRCharacter::UpdateDestinationMarker()
+{
+	FVector Location;
+	if (FindTeleportDestination(Location))
+	{
+		DestinationMarker->SetVisibility(true);
+		DestinationMarker->SetWorldLocation(Location);
+	}
+	else
+	{
 		DestinationMarker->SetVisibility(false);
 	}
 }
@@ -149,7 +178,9 @@ void AVRCharacter::BeginTeleport()
 
 void AVRCharacter::Teleport()
 {
-	SetActorLocation(DestinationMarker->GetComponentLocation());
+	FVector NewLocation = DestinationMarker->GetComponentLocation();
+	NewLocation.Z += GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	SetActorLocation(NewLocation);
 	CameraManager->StartCameraFade(1, 0, FadeInTime, FColor(0));
 
 }
