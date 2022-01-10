@@ -31,6 +31,7 @@ private:
 
 	bool FindTeleportDestination(FVector &OutLocation);
 	void UpdateDestinationMarker();
+	void UpdateBlinkers();
 
 	UPROPERTY()
 	class UCameraComponent* Camera;
@@ -38,6 +39,13 @@ private:
 	class USceneComponent* VRRoot;
 	
 	class APlayerCameraManager* CameraManager;
+
+	UPROPERTY()
+	class UPostProcessComponent* PostProcessComponent;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* BlinkerMaterialInstance;
+	//class UObject* BlinkerMaterialInstance;
 
 	UPROPERTY(VisibleAnywhere)
 	class UStaticMeshComponent* DestinationMarker;
@@ -62,4 +70,10 @@ private:
 	
 	UPROPERTY(EditAnywhere)
 	FVector TeleportProjectionExtent = FVector(100.f, 100.f, 100.f);
+
+	UPROPERTY(EditAnywhere)
+	class UMaterialInterface* BlinkerMaterialBase;
+
+	UPROPERTY(EditAnywhere)
+	class UCurveFloat* RadiusVsVelocity;
 };

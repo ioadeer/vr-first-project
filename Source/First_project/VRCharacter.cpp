@@ -11,6 +11,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/CapsuleComponent.h"
 #include "NavigationSystem.h"
+#include "Components/PostProcessComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
 
 // Sets default values
 AVRCharacter::AVRCharacter()
@@ -27,6 +30,9 @@ AVRCharacter::AVRCharacter()
 	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
 	DestinationMarker->SetupAttachment(GetRootComponent());
 
+	PostProcessComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	PostProcessComponent->SetupAttachment(GetRootComponent());
+
 	// APlayerController* PC = Cast<APlayerController>(GetController());
 	// CameraManager = PC->PlayerCameraManager;
 	CameraManager = Cast<APlayerCameraManager>(UGameplayStatics::GetPlayerCameraManager(this,0));
@@ -34,6 +40,7 @@ AVRCharacter::AVRCharacter()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Camera Manager at setup!"));
 	}
+
 	
 }
 
@@ -44,6 +51,17 @@ void AVRCharacter::BeginPlay()
 
 	PrevLocation = Camera->GetRelativeLocation();
 	DestinationMarker->SetVisibility(false);
+
+	if (!BlinkerMaterialBase)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Blinker Material Base at setup!"));
+	}
+	else
+	{
+		//MaterialInstance = UMaterialInstanceDynamic::Create();
+		BlinkerMaterialInstance = UMaterialInstanceDynamic::Create(BlinkerMaterialBase, this);
+		PostProcessComponent->AddOrUpdateBlendable(BlinkerMaterialBase); 
+	}
 }
 
 // Called every frame
@@ -57,7 +75,7 @@ void AVRCharacter::Tick(float DeltaTime)
 	VRRoot->AddWorldOffset(-NewCameraOffset);
 
 	UpdateDestinationMarker();
-	
+	UpdateBlinkers();
 	//DrawDebugLine(
 	//	GetWorld(),
 	//	PlayerViewPointPosition,
@@ -75,8 +93,8 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &AVRCharacter::MoveForward);
-	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &AVRCharacter::MoveRight);
+	PlayerInputComponent->BindAxis(TEXT("Move_Y"), this, &AVRCharacter::MoveForward);
+	PlayerInputComponent->BindAxis(TEXT("Move_X"), this, &AVRCharacter::MoveRight);
 	PlayerInputComponent->BindAction(TEXT("Teleport"),EInputEvent::IE_Released,this, &AVRCharacter::BeginTeleport);
 }
 
@@ -137,6 +155,20 @@ void AVRCharacter::UpdateDestinationMarker()
 	{
 		DestinationMarker->SetVisibility(false);
 	}
+}
+
+void AVRCharacter::UpdateBlinkers()
+{
+	if (RadiusVsVelocity == nullptr) {
+		UE_LOG(LogTemp, Warning, TEXT("NULL POINTER TO Curve"));
+	}
+	if (RadiusVsVelocity == nullptr) return;
+	
+	float Speed = GetVelocity().Size();
+	UE_LOG(LogTemp, Warning, TEXT("Speed %d"), Speed);
+	float Radius = RadiusVsVelocity->GetFloatValue(Speed);
+	UE_LOG(LogTemp, Warning, TEXT("Radius %d"), Radius);
+	BlinkerMaterialInstance->SetScalarParameterValue(TEXT("Radius"), Radius);
 }
 
 void AVRCharacter::MoveForward(float AxisValue)
