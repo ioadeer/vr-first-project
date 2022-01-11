@@ -60,7 +60,7 @@ void AVRCharacter::BeginPlay()
 	{
 		//MaterialInstance = UMaterialInstanceDynamic::Create();
 		BlinkerMaterialInstance = UMaterialInstanceDynamic::Create(BlinkerMaterialBase, this);
-		PostProcessComponent->AddOrUpdateBlendable(BlinkerMaterialBase); 
+		PostProcessComponent->AddOrUpdateBlendable(BlinkerMaterialInstance);
 	}
 }
 
@@ -74,8 +74,8 @@ void AVRCharacter::Tick(float DeltaTime)
 	AddActorWorldOffset(NewCameraOffset);
 	VRRoot->AddWorldOffset(-NewCameraOffset);
 
-	UpdateDestinationMarker();
 	UpdateBlinkers();
+	UpdateDestinationMarker();
 	//DrawDebugLine(
 	//	GetWorld(),
 	//	PlayerViewPointPosition,
@@ -165,9 +165,9 @@ void AVRCharacter::UpdateBlinkers()
 	if (RadiusVsVelocity == nullptr) return;
 	
 	float Speed = GetVelocity().Size();
-	UE_LOG(LogTemp, Warning, TEXT("Speed %d"), Speed);
+	// UE_LOG(LogTemp, Warning, TEXT("Speed %f"), Speed);
 	float Radius = RadiusVsVelocity->GetFloatValue(Speed);
-	UE_LOG(LogTemp, Warning, TEXT("Radius %d"), Radius);
+	// UE_LOG(LogTemp, Warning, TEXT("Radius %f"), Radius);
 	BlinkerMaterialInstance->SetScalarParameterValue(TEXT("Radius"), Radius);
 }
 
