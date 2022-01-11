@@ -32,6 +32,7 @@ private:
 	bool FindTeleportDestination(FVector &OutLocation);
 	void UpdateDestinationMarker();
 	void UpdateBlinkers();
+	FVector2D GetBlinkerCentre();
 
 	UPROPERTY()
 	class UCameraComponent* Camera;

@@ -13,6 +13,8 @@
 #include "NavigationSystem.h"
 #include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
 
 
 // Sets default values
@@ -161,14 +163,54 @@ void AVRCharacter::UpdateBlinkers()
 {
 	if (RadiusVsVelocity == nullptr) {
 		UE_LOG(LogTemp, Warning, TEXT("NULL POINTER TO Curve"));
+		return;
 	}
-	if (RadiusVsVelocity == nullptr) return;
+	//if (RadiusVsVelocity == nullptr) return;
 	
 	float Speed = GetVelocity().Size();
 	// UE_LOG(LogTemp, Warning, TEXT("Speed %f"), Speed);
 	float Radius = RadiusVsVelocity->GetFloatValue(Speed);
 	// UE_LOG(LogTemp, Warning, TEXT("Radius %f"), Radius);
 	BlinkerMaterialInstance->SetScalarParameterValue(TEXT("Radius"), Radius);
+
+	FVector2D Centre = GetBlinkerCentre();
+	UE_LOG(LogTemp, Warning, TEXT("Centre X : %f"), Centre.X);
+	UE_LOG(LogTemp, Warning, TEXT("Centre Y : %f"), Centre.Y);
+	BlinkerMaterialInstance->SetVectorParameterValue(TEXT("Centre"), FLinearColor(Centre.X, Centre.Y, 0.f));
+}
+
+FVector2D AVRCharacter::GetBlinkerCentre()
+{
+	FVector MovementDirection = GetVelocity().GetSafeNormal();
+	if (MovementDirection.IsNearlyZero())
+	{
+		// early return
+		return FVector2D(0.5f, 0.5f);
+	}
+	FVector WorldStationaryLocation;
+	if (FVector::DotProduct(Camera->GetForwardVector(), MovementDirection) > 0)
+	{
+		WorldStationaryLocation = Camera->GetComponentLocation() + MovementDirection * 1000;
+	}
+	else
+	{
+		WorldStationaryLocation = Camera->GetComponentLocation() - MovementDirection * 1000;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NullPtr Player Controller"));
+		return FVector2D(0.5f, 0.5f);
+	}
+	FVector2D ScreenStationaryLocation;
+	PC->ProjectWorldLocationToScreen(WorldStationaryLocation, ScreenStationaryLocation);
+
+	int32 SizeX, SizeY;
+	PC->GetViewportSize(SizeX, SizeY);
+	ScreenStationaryLocation.X /= SizeX;
+	ScreenStationaryLocation.Y /= SizeY;
+	return ScreenStationaryLocation;
 }
 
 void AVRCharacter::MoveForward(float AxisValue)
