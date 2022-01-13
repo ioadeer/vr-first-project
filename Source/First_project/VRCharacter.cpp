@@ -9,12 +9,14 @@
 #include "DrawDebugHelpers.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/GameplayStaticsTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "NavigationSystem.h"
 #include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
+#include "MotionControllerComponent.h"
 
 
 // Sets default values
@@ -28,6 +30,14 @@ AVRCharacter::AVRCharacter()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(VRRoot);
+
+	LeftController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("LeftController"));
+	LeftController->SetupAttachment(VRRoot);
+	LeftController->SetTrackingSource(EControllerHand::Left);
+
+	RightController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("RightController"));
+	RightController->SetupAttachment(VRRoot);
+	RightController->SetTrackingSource(EControllerHand::Right);
 
 	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
 	DestinationMarker->SetupAttachment(GetRootComponent());
@@ -102,32 +112,45 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 bool AVRCharacter::FindTeleportDestination(FVector& OutLocation)
 {
-	FVector Start = Camera->GetComponentLocation();
-	FVector End = Start + Camera->GetForwardVector() * MaxTeleportDistance;
+	// Set teleport location with camera
+	/*FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + Camera->GetForwardVector() * MaxTeleportDistance;*/
 
-	// FVector LineTracedEnd = PlayerViewPointPosition + PlayerViewPointRotation.Vector() * MaxTeleportDistance;
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-	if (GetWorld()->LineTraceSingleByChannel(
-		HitResult,
+	// Set teleport location with right controller
+	FVector Start = RightController->GetComponentLocation();
+	FVector Look = RightController->GetForwardVector();
+	Look = Look.RotateAngleAxis(30, RightController->GetRightVector());
+
+	FPredictProjectilePathParams Params(
+		TeleportProjectileRadius,
 		Start,
-		End,
+		Look * TeleportProjectileSpeed,
+		TeleportSimulationTime,
 		ECollisionChannel::ECC_Visibility,
-		Params
-	)) {
-		UWorld* MyWorld = GetWorld();
+		this
+	);
+	Params.DrawDebugType = EDrawDebugTrace::ForOneFrame;
+	Params.bTraceComplex = true;
+	FPredictProjectilePathResult Result;
+	if (UGameplayStatics::PredictProjectilePath(
+		//MyWorld,
+		this,
+		Params,
+		Result
+		)
+	) {
+		// UWorld* MyWorld = GetWorld();
 		FNavLocation NavLocation;
+		UWorld* MyWorld = GetWorld();
 		if (MyWorld)
 		{
 			if (UNavigationSystemV1::GetCurrent(MyWorld)->ProjectPointToNavigation(
-				HitResult.Location,
+				//HitResult.Location,
+				Result.HitResult.Location,
 				NavLocation,
 				TeleportProjectionExtent
 			))
 			{
-				/*DestinationMarker->SetVisibility(true);
-				DestinationMarker->SetWorldLocation(NavLocation.Location);*/
 				OutLocation = NavLocation.Location;
 				return true;
 			}
@@ -174,8 +197,8 @@ void AVRCharacter::UpdateBlinkers()
 	BlinkerMaterialInstance->SetScalarParameterValue(TEXT("Radius"), Radius);
 
 	FVector2D Centre = GetBlinkerCentre();
-	UE_LOG(LogTemp, Warning, TEXT("Centre X : %f"), Centre.X);
-	UE_LOG(LogTemp, Warning, TEXT("Centre Y : %f"), Centre.Y);
+	//UE_LOG(LogTemp, Warning, TEXT("Centre X : %f"), Centre.X);
+	//UE_LOG(LogTemp, Warning, TEXT("Centre Y : %f"), Centre.Y);
 	BlinkerMaterialInstance->SetVectorParameterValue(TEXT("Centre"), FLinearColor(Centre.X, Centre.Y, 0.f));
 }
 

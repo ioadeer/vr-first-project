@@ -37,6 +37,11 @@ private:
 	UPROPERTY()
 	class UCameraComponent* Camera;
 	UPROPERTY()
+	class UMotionControllerComponent* LeftController;
+	UPROPERTY()
+	class UMotionControllerComponent* RightController;
+
+	UPROPERTY()
 	class USceneComponent* VRRoot;
 	
 	class APlayerCameraManager* CameraManager;
@@ -60,8 +65,15 @@ private:
 	FVector ActualLocation;
 
 private:
+	
 	UPROPERTY(EditAnywhere)
-	float MaxTeleportDistance = 1000.f;
+	float TeleportProjectileRadius = 10.f;
+
+	UPROPERTY(EditAnywhere)
+	float TeleportProjectileSpeed = 800.f;
+
+	UPROPERTY(EditAnywhere)
+	float TeleportSimulationTime = 2.f;
 		
 	UPROPERTY(EditAnywhere)
 	float FadeOutTime = 0.25f;
