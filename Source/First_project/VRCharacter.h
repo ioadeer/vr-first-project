@@ -33,6 +33,7 @@ private:
 	void UpdateDestinationMarker();
 	void UpdateBlinkers();
 	void UpdateSpline(const TArray<FVector> &Path);
+	void DrawTeleportPath(const TArray<FVector>& Path);
 	FVector2D GetBlinkerCentre();
 
 	UPROPERTY()
@@ -47,18 +48,21 @@ private:
 	
 	class APlayerCameraManager* CameraManager;
 
-	UPROPERTY()
-	class UPostProcessComponent* PostProcessComponent;
-
-	UPROPERTY()
-	class UMaterialInstanceDynamic* BlinkerMaterialInstance;
-	//class UObject* BlinkerMaterialInstance;
-
 	UPROPERTY(VisibleAnywhere)
 	class USplineComponent* TeleportPath;
 
 	UPROPERTY(VisibleAnywhere)
 	class UStaticMeshComponent* DestinationMarker;
+
+	UPROPERTY()
+	class UPostProcessComponent* PostProcessComponent;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* BlinkerMaterialInstance;
+
+	UPROPERTY()
+	TArray<class UStaticMeshComponent*> TeleportPathMeshPool;
+
 
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
@@ -93,4 +97,11 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	class UCurveFloat* RadiusVsVelocity;
+
+	UPROPERTY(EditDefaultsOnly)
+	class UStaticMesh* TeleportArchMesh;
+
+	UPROPERTY(EditDefaultsOnly)
+	class UMaterialInterface* TeleportArchMaterial;
+
 };

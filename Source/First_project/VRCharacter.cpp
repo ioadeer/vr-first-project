@@ -52,10 +52,10 @@ AVRCharacter::AVRCharacter()
 	// APlayerController* PC = Cast<APlayerController>(GetController());
 	// CameraManager = PC->PlayerCameraManager;
 	CameraManager = Cast<APlayerCameraManager>(UGameplayStatics::GetPlayerCameraManager(this,0));
-	if (!CameraManager)
+	/*if (!CameraManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Camera Manager at setup!"));
-	}
+	}*/
 
 	
 }
@@ -70,7 +70,7 @@ void AVRCharacter::BeginPlay()
 
 	if (!BlinkerMaterialBase)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Blinker Material Base at setup!"));
+		UE_LOG(LogTemp, Warning, TEXT("Null Pointer to Blinker Material Base at begin play!"));
 	}
 	else
 	{
@@ -78,6 +78,7 @@ void AVRCharacter::BeginPlay()
 		BlinkerMaterialInstance = UMaterialInstanceDynamic::Create(BlinkerMaterialBase, this);
 		PostProcessComponent->AddOrUpdateBlendable(BlinkerMaterialInstance);
 	}
+
 }
 
 // Called every frame
@@ -185,7 +186,7 @@ void AVRCharacter::UpdateDestinationMarker()
 	{
 		DestinationMarker->SetVisibility(true);
 		DestinationMarker->SetWorldLocation(Location);
-		UpdateSpline(Path);
+		DrawTeleportPath(Path);
 	}
 	else
 	{
@@ -222,6 +223,34 @@ void AVRCharacter::UpdateSpline(const TArray<FVector> &Path)
 		TeleportPath->AddPoint(Point, false);
 	}
 	TeleportPath->UpdateSpline();
+}
+
+void AVRCharacter::DrawTeleportPath(const TArray<FVector>& Path)
+{
+	UpdateSpline(Path);
+
+	for (int32 i = 0; i < Path.Num(); i++)
+	{
+		if (TeleportPathMeshPool.Num() <= i)
+		{
+			UStaticMeshComponent* DynamicMesh = NewObject<UStaticMeshComponent>(this);
+			DynamicMesh->AttachToComponent(VRRoot, FAttachmentTransformRules::KeepRelativeTransform);
+			DynamicMesh->SetStaticMesh(TeleportArchMesh);
+			DynamicMesh->SetMaterial(0, TeleportArchMaterial);
+			DynamicMesh->RegisterComponent();
+
+			TeleportPathMeshPool.Add(DynamicMesh);
+		}
+		if (TeleportPathMeshPool.IsValidIndex(i))
+		{
+			UStaticMeshComponent* DynamicMesh = TeleportPathMeshPool[i];
+			DynamicMesh->SetWorldLocation(Path[i]);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Teleport Path Mesh Pool index out of bounds."));
+		}
+	}
 }
 
 FVector2D AVRCharacter::GetBlinkerCentre()
