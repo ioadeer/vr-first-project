@@ -38,10 +38,11 @@ private:
 
 	UPROPERTY()
 	class UCameraComponent* Camera;
+	
 	UPROPERTY()
-	class UMotionControllerComponent* LeftController;
+	class AHandController* LeftController;
 	UPROPERTY()
-	class UMotionControllerComponent* RightController;
+	class AHandController* RightController;
 
 	UPROPERTY()
 	class USceneComponent* VRRoot;
@@ -72,7 +73,7 @@ private:
 	FVector PrevLocation;
 	FVector ActualLocation;
 
-private:
+private: // config parameter
 	
 	UPROPERTY(EditAnywhere)
 	float TeleportProjectileRadius = 10.f;
@@ -104,4 +105,6 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	class UMaterialInterface* TeleportArchMaterial;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AHandController> HandControllerClass;
 };
