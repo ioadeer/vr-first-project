@@ -2,6 +2,8 @@
 
 
 #include "HandController.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 
 // Sets default values
@@ -34,15 +36,25 @@ void AHandController::Tick(float DeltaTime)
 
 void AHandController::ActorBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
-	bCanClimb = CanClimb();
-	if (bCanClimb)
+	bool bNewCanClimb = CanClimb();
+	if (!bCanClimb && bNewCanClimb)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Begin overlap: Hand Controller can climb"));
+		APawn* Pawn = Cast<APawn>(GetAttachParentActor());
+		if (Pawn != nullptr)
+		{
+			APlayerController* Controller = Cast<APlayerController>(Pawn->GetController());
+			if (Controller != nullptr)
+			{
+				Controller->PlayHapticEffect(
+					HapticEffect,
+					MotionController->GetTrackingSource()
+				);
+			}
+		}
+
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Begin overlap: Hand Controller can't climb"));
-	}
+	bCanClimb = bNewCanClimb;
+
 }
 
 void AHandController::ActorEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
