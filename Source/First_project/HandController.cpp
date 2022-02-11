@@ -12,13 +12,17 @@ AHandController::AHandController()
 
 	MotionController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("MotionController"));
 	SetRootComponent(MotionController);
+
+	
 }
 
 // Called when the game starts or when spawned
 void AHandController::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	//  FActorBeginOverlapSignature, AActor, OnActorBeginOverlap, AActor*, OverlappedActor, AActor*, OtherActor 
+	OnActorBeginOverlap.AddDynamic(this, &AHandController::ActorBeginOverlap);
+	OnActorEndOverlap.AddDynamic(this, &AHandController::ActorEndOverlap);
 }
 
 // Called every frame
@@ -26,5 +30,45 @@ void AHandController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AHandController::ActorBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
+{
+	bCanClimb = CanClimb();
+	if (bCanClimb)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Begin overlap: Hand Controller can climb"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Begin overlap: Hand Controller can't climb"));
+	}
+}
+
+void AHandController::ActorEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
+{
+	bCanClimb = CanClimb();
+	if (bCanClimb)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("End overlap: Hand Controller can climb"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("End overlap: Hand Controller can't climb"));
+	}
+}
+
+bool AHandController::CanClimb() const
+{
+	TArray<AActor*> OverlappingActors;
+	GetOverlappingActors(OverlappingActors);
+	for (AActor* OverlappingActor : OverlappingActors)
+	{
+		if (OverlappingActor->ActorHasTag(TEXT("Climbable")))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
