@@ -4,6 +4,8 @@
 #include "HandController.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 // Sets default values
@@ -16,6 +18,49 @@ AHandController::AHandController()
 	SetRootComponent(MotionController);
 
 	
+}
+
+void AHandController::PairController(AHandController* Controller)
+{
+	SetController(Controller);
+	OtherController->SetController(this);
+}
+
+void AHandController::SetController(AHandController* Controller)
+{
+	OtherController = Controller;
+}
+
+void AHandController::Grip()
+{
+	if (!bCanClimb)
+	{
+		return;
+	}
+	if (!bIsClimbing)
+	{
+		OtherController->bIsClimbing = false;
+		bIsClimbing = true;
+		ClimbingStartLocation = GetActorLocation();
+		ACharacter* Character = Cast<ACharacter>(GetAttachParentActor());
+		if (Character != nullptr)
+		{
+			Character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+		}
+	}
+}
+
+void AHandController::Release()
+{
+	if (bIsClimbing)
+	{
+		bIsClimbing = false;
+		ACharacter* Character = Cast<ACharacter>(GetAttachParentActor());
+		if (Character != nullptr)
+		{
+			Character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+		}
+	}
 }
 
 // Called when the game starts or when spawned
@@ -31,7 +76,12 @@ void AHandController::BeginPlay()
 void AHandController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	if (bIsClimbing)
+	{
+	
+		FVector HandControllerDelta = GetActorLocation() - ClimbingStartLocation;
+		GetAttachParentActor()->AddActorWorldOffset(-HandControllerDelta);
+	}
 }
 
 void AHandController::ActorBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
@@ -60,14 +110,14 @@ void AHandController::ActorBeginOverlap(AActor* OverlappedActor, AActor* OtherAc
 void AHandController::ActorEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
 	bCanClimb = CanClimb();
-	if (bCanClimb)
+	/*if (bCanClimb)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("End overlap: Hand Controller can climb"));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("End overlap: Hand Controller can't climb"));
-	}
+	}*/
 }
 
 bool AHandController::CanClimb() const
